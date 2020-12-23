@@ -254,16 +254,18 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR strCmdLine, I
 
 		auto doGameLoop = [&]() {
 
-			std::chrono::steady_clock::time_point startTime, endTime;
+			std::chrono::steady_clock::time_point startTime=std::chrono::steady_clock::now(), endTime;
+
+			int frameCount = 0;
 
 			while (!windowHandler.quit() && !guiSheet.quit() ) {
 
-				startTime = std::chrono::steady_clock::now();
 
 				poller.poll();
 				cef.doEvents();
 
 				graphics.updateFrame();
+				++frameCount;
 
 				std::this_thread::sleep_for(std::chrono::milliseconds(1000/60));
 
@@ -271,13 +273,21 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR strCmdLine, I
 	
 				auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
 
-				guiSheet.updateField("FPS", elapsedTime.count());
-				guiSheet.updateMessage("Status", "OK");
-				guiSheet.updateMessage("Inputs", "F1, F5, F6");
+				if (elapsedTime >= std::chrono::milliseconds(1000)) {
+
+					guiSheet.updateField("FPS", frameCount );
+					guiSheet.updateMessage("Status", "OK");
+					guiSheet.updateMessage("Inputs", "F1, F5, F6");
+
+					frameCount = 0;
+					startTime = endTime;
+				}
 			}
 		};
 		doGameLoop();
 		
+		poller.shutdown();
+
 		browser->destroyBrowser(graphics);
 
         graphics.shutdown();
